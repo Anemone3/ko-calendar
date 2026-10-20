@@ -1,10 +1,9 @@
-# Maintainer: Nombre <correo>
 # Binario oficial de la release de GitHub, compilado en CI con el cliente OAuth de
 # Google incorporado (Google Sync funciona sin configurar nada). Las credenciales no
 # aparecen en este archivo: vienen de los secretos de GitHub del entorno «release».
 pkgname=ko-calendar-bin
 _pkgname=ko-calendar
-pkgver=0.4.3
+pkgver=0.4.4
 pkgrel=1
 pkgdesc="Calendario mínimo de bandeja con avisos de Google Calendar (binario oficial)"
 arch=('x86_64')

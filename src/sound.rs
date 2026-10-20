@@ -1,3 +1,4 @@
+use kokonut_calendar::sound_settings::{ADVANCE_FILE, DEFAULT_FILE, RENAMED_FILES, current_file};
 use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 use std::{
     fs,
@@ -10,9 +11,7 @@ use std::{
     time::Duration,
 };
 
-pub const DEFAULT_FILE: &str = "kokonut.mp3";
 const DEFAULT_SOUND: &[u8] = include_bytes!("../assets/sounds/ko-tify.mp3");
-pub const ADVANCE_FILE: &str = "anticipado.mp3";
 const ADVANCE_SOUND: &[u8] = include_bytes!("../assets/sounds/alarm.mp3");
 
 pub fn directory(data: &Path) -> PathBuf {
@@ -23,6 +22,14 @@ pub fn initialize(data: &Path) -> Result<Vec<String>, String> {
     let directory = directory(data);
     fs::create_dir_all(&directory)
         .map_err(|e| format!("No se pudo crear la carpeta de sonidos: {e}"))?;
+    for (previous, current) in RENAMED_FILES {
+        let previous = directory.join(previous);
+        let current = directory.join(current);
+        if previous.is_file() && !current.exists() {
+            fs::rename(previous, current)
+                .map_err(|e| format!("No se pudo actualizar el nombre del sonido: {e}"))?;
+        }
+    }
     for (name, embedded) in [(DEFAULT_FILE, DEFAULT_SOUND), (ADVANCE_FILE, ADVANCE_SOUND)] {
         let default = directory.join(name);
         if default.exists() {
@@ -41,7 +48,7 @@ pub fn initialize(data: &Path) -> Result<Vec<String>, String> {
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_ok_and(|t| t.is_file()))
         .filter_map(|entry| entry.file_name().into_string().ok())
-        .filter(|name| valid_name(name))
+        .filter(|name| valid_name(name) && current_file(name) == name)
         .collect::<Vec<_>>();
     files.sort_by_key(|name| name.to_lowercase());
     Ok(files)
@@ -114,6 +121,57 @@ impl Player {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn test_data() -> PathBuf {
+        let data = std::env::temp_dir().join(format!(
+            "ko-calendar-sounds-{}-{}",
+            std::process::id(),
+            chrono::Utc::now().timestamp_nanos_opt().unwrap()
+        ));
+        fs::create_dir_all(directory(&data)).unwrap();
+        data
+    }
+    #[test]
+    fn legacy_sound_files_keep_their_contents_under_the_new_names() {
+        let data = test_data();
+        fs::write(directory(&data).join("kokonut.mp3"), b"my notification").unwrap();
+        fs::write(directory(&data).join("anticipado.mp3"), b"my alarm").unwrap();
+        fs::write(directory(&data).join("personal.mp3"), b"my custom sound").unwrap();
+        let files = initialize(&data).unwrap();
+        assert_eq!(files, ["alarm.mp3", "ko-tify.mp3", "personal.mp3"]);
+        assert_eq!(
+            fs::read(directory(&data).join("ko-tify.mp3")).unwrap(),
+            b"my notification"
+        );
+        assert_eq!(
+            fs::read(directory(&data).join("alarm.mp3")).unwrap(),
+            b"my alarm"
+        );
+        assert_eq!(
+            fs::read(directory(&data).join("personal.mp3")).unwrap(),
+            b"my custom sound"
+        );
+        assert!(!directory(&data).join("kokonut.mp3").exists());
+        assert!(!directory(&data).join("anticipado.mp3").exists());
+        assert_eq!(initialize(&data).unwrap(), files);
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn existing_new_sound_files_are_never_overwritten_by_legacy_files() {
+        let data = test_data();
+        fs::write(directory(&data).join("kokonut.mp3"), b"previous sound").unwrap();
+        fs::write(directory(&data).join("ko-tify.mp3"), b"new sound").unwrap();
+        let files = initialize(&data).unwrap();
+        assert_eq!(files, ["alarm.mp3", "ko-tify.mp3"]);
+        assert_eq!(
+            fs::read(directory(&data).join("ko-tify.mp3")).unwrap(),
+            b"new sound"
+        );
+        assert_eq!(
+            fs::read(directory(&data).join("kokonut.mp3")).unwrap(),
+            b"previous sound"
+        );
+        fs::remove_dir_all(data).unwrap();
+    }
     #[test]
     fn supplied_sound_decodes_to_a_short_non_silent_clip() {
         let decoder = Decoder::try_from(std::io::Cursor::new(DEFAULT_SOUND)).unwrap();

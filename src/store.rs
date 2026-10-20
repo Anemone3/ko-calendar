@@ -83,7 +83,13 @@ impl Store {
             .map(|s| serde_json::from_str(&s))
             .transpose()?
             .unwrap_or_default();
+        let previous = settings.clone();
+        settings.file = crate::sound_settings::current_file(&settings.file).into();
+        settings.advance_file = crate::sound_settings::current_file(&settings.advance_file).into();
         settings.volume = settings.volume.min(100);
+        if settings != previous {
+            self.save_sound_settings(&settings)?;
+        }
         Ok(settings)
     }
 
@@ -281,6 +287,31 @@ fn read_reminder(row: &rusqlite::Row<'_>) -> rusqlite::Result<Reminder> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn legacy_sound_names_are_migrated_and_saved_without_resetting_preferences() {
+        let store = memory();
+        store.connection.execute(
+            "INSERT INTO sound_settings(id,data) VALUES(1,?1)",
+            [r#"{"enabled":false,"file":"kokonut.mp3","volume":27,"advance_enabled":true,"advance_file":"anticipado.mp3"}"#],
+        ).unwrap();
+        let settings = store.sound_settings().unwrap();
+        assert_eq!(settings.file, "ko-tify.mp3");
+        assert_eq!(settings.advance_file, "alarm.mp3");
+        assert!(!settings.enabled);
+        assert!(settings.advance_enabled);
+        assert_eq!(settings.volume, 27);
+        let saved: String = store
+            .connection
+            .query_row("SELECT data FROM sound_settings WHERE id=1", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<crate::sound_settings::SoundSettings>(&saved).unwrap(),
+            settings
+        );
+        assert_eq!(store.sound_settings().unwrap(), settings);
+    }
     fn memory() -> Store {
         Store::initialize(Connection::open_in_memory().unwrap()).unwrap()
     }
@@ -354,7 +385,7 @@ mod tests {
             file: "mi alarma.mp3".into(),
             volume: 25,
             advance_enabled: true,
-            advance_file: "anticipado.mp3".into(),
+            advance_file: "alarm.mp3".into(),
         };
         let snapshot = alarm_snapshot(1000);
         {

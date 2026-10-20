@@ -1,6 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 pub const ADVANCE_SECONDS: i64 = 2 * 60;
+pub const DEFAULT_FILE: &str = "ko-tify.mp3";
+pub const ADVANCE_FILE: &str = "alarm.mp3";
+pub const RENAMED_FILES: [(&str, &str); 2] = [
+    ("kokonut.mp3", DEFAULT_FILE),
+    ("anticipado.mp3", ADVANCE_FILE),
+];
+
+pub fn current_file(name: &str) -> &str {
+    RENAMED_FILES
+        .iter()
+        .find_map(|(previous, current)| (*previous == name).then_some(*current))
+        .unwrap_or(name)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SoundKind {
@@ -22,10 +35,10 @@ impl Default for SoundSettings {
     fn default() -> Self {
         Self {
             enabled: true,
-            file: "kokonut.mp3".into(),
+            file: DEFAULT_FILE.into(),
             volume: 80,
             advance_enabled: false,
-            advance_file: "anticipado.mp3".into(),
+            advance_file: ADVANCE_FILE.into(),
         }
     }
 }
@@ -72,7 +85,7 @@ mod tests {
         assert!(!settings.enabled_for(SoundKind::Notification));
         assert!(!settings.enabled_for(SoundKind::Advance));
         assert_eq!(settings.file_for(SoundKind::Notification), "personal.mp3");
-        assert_eq!(settings.file_for(SoundKind::Advance), "anticipado.mp3");
+        assert_eq!(settings.file_for(SoundKind::Advance), "alarm.mp3");
         assert_eq!(settings.volume, 30);
         let settings = SoundSettings {
             advance_enabled: true,
