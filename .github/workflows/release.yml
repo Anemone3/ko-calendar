@@ -41,17 +41,33 @@ jobs:
       run:
         shell: bash
     steps:
-      - run: pacman -Syu --noconfirm --needed git rust alsa-lib libxkbcommon wayland
+      - run: pacman -Syu --noconfirm --needed git rust alsa-lib libxkbcommon wayland namcap
       - uses: actions/checkout@v4
       - name: Package (Google OAuth client compiled in)
         env:
           KOKONUT_GOOGLE_CLIENT_ID: ${{ secrets.KOKONUT_GOOGLE_CLIENT_ID }}
           KOKONUT_GOOGLE_CLIENT_SECRET: ${{ secrets.KOKONUT_GOOGLE_CLIENT_SECRET }}
         run: bash scripts/package-linux.sh
+      - name: Build and validate the Arch package
+        run: |
+          archive_sha=$(sha256sum dist/ko-calendar-linux-x86_64.tar.gz | cut -d ' ' -f1)
+          sed -i "s/^pkgver=.*/pkgver=${GITHUB_REF_NAME#v}/;s/^pkgrel=.*/pkgrel=1/;s/^sha256sums_x86_64=.*/sha256sums_x86_64=('$archive_sha')/" packaging/aur/ko-calendar-bin/PKGBUILD
+          useradd -m builder
+          cp -r packaging/aur/ko-calendar-bin /home/builder/pkg
+          cp dist/ko-calendar-linux-x86_64.tar.gz "/home/builder/pkg/ko-calendar-linux-x86_64-${GITHUB_REF_NAME#v}.tar.gz"
+          chown -R builder /home/builder/pkg
+          su builder -c 'cd ~/pkg && makepkg --printsrcinfo > .SRCINFO && makepkg --noconfirm --nodeps && namcap PKGBUILD ./*.pkg.tar.zst'
+          cp /home/builder/pkg/*.pkg.tar.zst dist/
+          cp /home/builder/pkg/PKGBUILD dist/ko-calendar-bin.PKGBUILD
+          cp /home/builder/pkg/.SRCINFO dist/ko-calendar-bin.SRCINFO
       - uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: dist/ko-calendar-linux-x86_64.tar.gz
+          path: |
+            dist/ko-calendar-linux-x86_64.tar.gz
+            dist/*.pkg.tar.zst
+            dist/ko-calendar-bin.PKGBUILD
+            dist/ko-calendar-bin.SRCINFO
           if-no-files-found: error
 
   release:
@@ -67,7 +83,7 @@ jobs:
       - name: Checksums
         run: |
           cd dist
-          sha256sum ko-calendar-windows-x64.zip ko-calendar-linux-x86_64.tar.gz > SHA256SUMS
+          sha256sum ko-calendar-windows-x64.zip ko-calendar-linux-x86_64.tar.gz ko-calendar-bin-*.pkg.tar.zst ko-calendar-bin.PKGBUILD ko-calendar-bin.SRCINFO > SHA256SUMS
           cat SHA256SUMS
       - name: GitHub Release
         env:

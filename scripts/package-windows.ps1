@@ -40,9 +40,20 @@ try {
         Copy-Item -LiteralPath (Join-Path $taskRoot 'LICENSE') -Destination (Join-Path $taskDist 'LICENSE') -Force
         $taskSounds = Join-Path $taskDist 'sounds'
         New-Item -ItemType Directory -Path $taskSounds -Force | Out-Null
-        Copy-Item -LiteralPath (Join-Path $taskRoot 'assets/sounds/ko-tify.mp3') -Destination (Join-Path $taskSounds 'kokonut.mp3') -Force
-        Copy-Item -LiteralPath (Join-Path $taskRoot 'assets/sounds/alarm.mp3') -Destination (Join-Path $taskSounds 'anticipado.mp3') -Force
-        Compress-Archive -LiteralPath (Join-Path $taskDist 'ko-calendar.exe'),(Join-Path $taskDist 'LICENSE'),$taskSounds -DestinationPath (Join-Path $taskDist 'ko-calendar-windows-x64.zip') -Force
+        Copy-Item -LiteralPath (Join-Path $taskRoot 'assets/sounds/ko-tify.mp3') -Destination (Join-Path $taskSounds 'ko-tify.mp3') -Force
+        Copy-Item -LiteralPath (Join-Path $taskRoot 'assets/sounds/alarm.mp3') -Destination (Join-Path $taskSounds 'alarm.mp3') -Force
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $taskArchiveStream = [IO.File]::Create((Join-Path $taskDist 'ko-calendar-windows-x64.zip'))
+        $taskArchive = [IO.Compression.ZipArchive]::new($taskArchiveStream, [IO.Compression.ZipArchiveMode]::Create)
+        try {
+            foreach ($taskEntry in @('ko-calendar.exe', 'LICENSE', 'sounds/ko-tify.mp3', 'sounds/alarm.mp3')) {
+                [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($taskArchive, (Join-Path $taskDist $taskEntry), $taskEntry) | Out-Null
+            }
+        }
+        finally {
+            $taskArchive.Dispose()
+            $taskArchiveStream.Dispose()
+        }
         Write-Output (Join-Path $taskDist 'ko-calendar-windows-x64.zip')
     }
     finally { Pop-Location }
