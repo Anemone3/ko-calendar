@@ -1,0 +1,39 @@
+/target/
+/dist/
+/.local/
+
+# Local databases, diagnostic captures and personal calendar data.
+*.log
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.sqlite3-journal
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+notification-diagnostic.json
+
+# OAuth configuration and environment files stay on the maintainer's machine.
+client_secret_*.json
+desktop-client.json
+credentials.json
+token.json
+tokens.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor and operating system files.
+/.idea/
+/.vscode/
+*.swp
+*.tmp
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+flow_design/
+artifacts/

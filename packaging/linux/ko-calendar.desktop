@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=ko-calendar
+GenericName=Calendario
+Comment=Calendario mínimo de bandeja con avisos de Google Calendar
+Exec=ko-calendar
+Icon=ko-calendar
+Terminal=false
+Categories=Office;Calendar;
+Keywords=kokonut;calendario;calendar;google;
+StartupNotify=false

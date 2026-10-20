@@ -1,0 +1,107 @@
+name: Release
+
+# Runs only for version tags (git tag v0.4.3 && git push origin v0.4.3).
+# Builds the official binaries with the Google OAuth client compiled in, publishes the
+# GitHub Release and updates ko-calendar-bin on the AUR. Scoop picks the release up on
+# its own (Excavator in the bucket). Secrets come from the "release" environment
+# (tags v* only): KOKONUT_GOOGLE_CLIENT_ID, KOKONUT_GOOGLE_CLIENT_SECRET,
+# AUR_SSH_PRIVATE_KEY, AUR_USERNAME, AUR_EMAIL. None of them is ever written to the repo.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Package (Google OAuth client compiled in)
+        shell: pwsh
+        env:
+          KOKONUT_GOOGLE_CLIENT_ID: ${{ secrets.KOKONUT_GOOGLE_CLIENT_ID }}
+          KOKONUT_GOOGLE_CLIENT_SECRET: ${{ secrets.KOKONUT_GOOGLE_CLIENT_SECRET }}
+        run: ./scripts/package-windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/ko-calendar-windows-x64.zip
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+    # Built on Arch so the binary matches the glibc and libraries of the AUR users.
+    container: archlinux:base-devel
+    environment: release
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - run: pacman -Syu --noconfirm --needed git rust alsa-lib libxkbcommon wayland
+      - uses: actions/checkout@v4
+      - name: Package (Google OAuth client compiled in)
+        env:
+          KOKONUT_GOOGLE_CLIENT_ID: ${{ secrets.KOKONUT_GOOGLE_CLIENT_ID }}
+          KOKONUT_GOOGLE_CLIENT_SECRET: ${{ secrets.KOKONUT_GOOGLE_CLIENT_SECRET }}
+        run: bash scripts/package-linux.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/ko-calendar-linux-x86_64.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum ko-calendar-windows-x64.zip ko-calendar-linux-x86_64.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "ko-calendar $GITHUB_REF_NAME" --generate-notes
+
+  aur:
+    if: vars.AUR_PUBLISH_ENABLED == 'true'
+    needs: release
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    environment: release
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - run: pacman -Syu --noconfirm --needed git pacman-contrib namcap alsa-lib libxkbcommon wayland
+      - uses: actions/checkout@v4
+      - name: PKGBUILD for this version
+        run: sed -i "s/^pkgver=.*/pkgver=${GITHUB_REF_NAME#v}/; s/^pkgrel=.*/pkgrel=1/" packaging/aur/ko-calendar-bin/PKGBUILD
+      - name: Build and check as an unprivileged user (makepkg refuses root)
+        run: |
+          useradd -m builder
+          cp -r packaging/aur/ko-calendar-bin /home/builder/pkg
+          chown -R builder /home/builder/pkg
+          su builder -c 'cd ~/pkg && updpkgsums && makepkg --noconfirm --nodeps && namcap PKGBUILD ./*.pkg.tar.zst'
+          cp /home/builder/pkg/PKGBUILD packaging/aur/ko-calendar-bin/PKGBUILD
+      - name: Publish to the AUR (branch master)
+        uses: KSXGitHub/github-actions-deploy-aur@v4.2.0
+        with:
+          pkgname: ko-calendar-bin
+          pkgbuild: packaging/aur/ko-calendar-bin/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to ${{ github.ref_name }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519

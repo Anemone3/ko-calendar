@@ -1,0 +1,36 @@
+# Maintainer: Nombre <correo>
+# Binario oficial de la release de GitHub, compilado en CI con el cliente OAuth de
+# Google incorporado (Google Sync funciona sin configurar nada). Las credenciales no
+# aparecen en este archivo: vienen de los secretos de GitHub del entorno «release».
+pkgname=ko-calendar-bin
+_pkgname=ko-calendar
+pkgver=0.4.3
+pkgrel=1
+pkgdesc="Calendario mínimo de bandeja con avisos de Google Calendar (binario oficial)"
+arch=('x86_64')
+url="https://github.com/Anemone3/ko-calendar"
+license=('MIT')
+# libxkbcommon y wayland se cargan con dlopen (winit): namcap dice que "quizá sobran", pero son obligatorias.
+depends=('alsa-lib' 'glibc' 'libgcc' 'libxkbcommon' 'wayland' 'hicolor-icon-theme')
+optdepends=(
+  'gnome-keyring: guardar la sesión de Google (o KWallet / otro Secret Service)'
+  'mako: daemon de notificaciones (o swaync, dunst, el del escritorio)'
+  'waybar: bandeja StatusNotifierItem (o cualquier barra con tray)'
+  'libxcursor: sesión X11'
+  'libxi: sesión X11'
+  'libxrandr: sesión X11'
+)
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+# El binario ya viene optimizado y sin símbolos (profile.release strip = true).
+options=('!strip' '!debug')
+source_x86_64=("$_pkgname-linux-$CARCH-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_pkgname-linux-$CARCH.tar.gz")
+sha256sums_x86_64=('SKIP') # updpkgsums lo reemplaza; no publicar con SKIP
+
+package() {
+  cd "$_pkgname-linux-$CARCH"
+  install -Dm755 ko-calendar "$pkgdir/usr/bin/ko-calendar"
+  install -Dm644 ko-calendar.desktop "$pkgdir/usr/share/applications/ko-calendar.desktop"
+  install -Dm644 ko-calendar.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/ko-calendar.png"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
