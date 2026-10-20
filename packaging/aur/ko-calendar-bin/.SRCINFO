@@ -1,6 +1,6 @@
 pkgbase = ko-calendar-bin
 	pkgdesc = Calendario mínimo de bandeja con avisos de Google Calendar (binario oficial)
-	pkgver = 0.4.4
+	pkgver = 0.4.5
 	pkgrel = 1
 	url = https://github.com/Anemone3/ko-calendar
 	arch = x86_64
@@ -21,7 +21,7 @@ pkgbase = ko-calendar-bin
 	conflicts = ko-calendar
 	options = !strip
 	options = !debug
-	source_x86_64 = ko-calendar-linux-x86_64-0.4.4.tar.gz::https://github.com/Anemone3/ko-calendar/releases/download/v0.4.4/ko-calendar-linux-x86_64.tar.gz
-	sha256sums_x86_64 = fa213a4f77f8c9e1a63fac6eae5a39a2249134b4994883a26753f9e76d2a9242
+	source_x86_64 = ko-calendar-linux-x86_64-0.4.5.tar.gz::https://github.com/Anemone3/ko-calendar/releases/download/v0.4.5/ko-calendar-linux-x86_64.tar.gz
+	sha256sums_x86_64 = a2ecdffe12ff8e7080e64ee072db7bc2635e0d1a3f9bd8cf737c9cfaa163073f
 
 pkgname = ko-calendar-bin
