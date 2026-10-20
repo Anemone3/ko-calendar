@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacidad · ko-calendar</title>
+  <link rel="icon" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header><img src="icon.png" width="40" height="40" alt=""><a href="./">ko-calendar</a></header>
+    <h1>Política de privacidad</h1>
+    <p class="muted">Actualizada el 20 de octubre de 2026</p>
+    <p>Esta política describe el uso de datos en ko-calendar, también conocido como Kokonut Calendar, publicado por <a href="https://github.com/Anemone3">Anemone3</a>. Es una aplicación local para Linux y Windows que muestra eventos y recordatorios de Google Calendar.</p>
+    <h2>Acceso a Google Calendar</h2>
+    <p>La conexión es opcional y se inicia al pulsar el botón para conectar Google. Google gestiona el inicio de sesión y solicita tu consentimiento. La aplicación no recibe tu contraseña.</p>
+    <p>La aplicación solicita estos permisos de solo lectura:</p>
+    <ul>
+      <li><code>calendar.calendarlist.readonly</code>: consultar la lista de calendarios para identificar tu calendario principal y la cuenta conectada.</li>
+      <li><code>calendar.events.readonly</code>: consultar los eventos del calendario principal, sus fechas y horas, títulos, descripciones, ubicaciones, enlaces y recordatorios. La respuesta de Google puede incluir la información de participantes; la aplicación la utiliza para identificar si has rechazado un evento y omitirlo.</li>
+    </ul>
+    <p>Estos datos se utilizan para mostrar la agenda, abrir los enlaces de los eventos y programar recordatorios en tu equipo. La aplicación no crea, modifica ni elimina eventos en Google Calendar.</p>
+    <h2>Almacenamiento y conservación</h2>
+    <p>Los tokens de acceso y de renovación se guardan en el almacén de credenciales de tu sistema operativo. Los eventos sincronizados, el identificador de cuenta, las preferencias y los recordatorios se guardan en una base de datos SQLite dentro de la carpeta local de datos de la aplicación. Esta base de datos no se cifra por la aplicación; su protección depende de los permisos y la seguridad de tu equipo.</p>
+    <p>La sincronización consulta aproximadamente los últimos siete días y los próximos noventa días. La copia local se actualiza al sincronizar y permite consultar los últimos datos disponibles si falla la conexión. Se conserva hasta que se reemplaza, desconectas Google o eliminas los datos locales. Las copias de seguridad que realices de tu equipo se gestionan por separado.</p>
+    <h2>Transferencia y uso de los datos</h2>
+    <p>La aplicación se comunica directamente con los servicios de autenticación y Calendar de Google mediante HTTPS. El desarrollador no opera un servidor que reciba tus tokens o los datos de tu calendario. No hay publicidad ni analítica integrada; los datos de Google no se venden, no se comparten con anunciantes y no se utilizan para entrenar modelos de inteligencia artificial. Los avisos pueden mostrar información del evento en tu escritorio.</p>
+    <p>Si abres un enlace de un evento, tu navegador se conecta al sitio correspondiente, que se rige por su propia política. Este sitio informativo está alojado en GitHub Pages; GitHub puede tratar registros de acceso según su <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">política de privacidad</a>. El sitio no incluye formularios, analítica ni cookies propias.</p>
+    <p>El uso y la transferencia de información recibida de las API de Google se ajustan a la <a href="https://developers.google.com/terms/api-services-user-data-policy">Política de Datos del Usuario de los Servicios de API de Google</a>, incluidos sus requisitos de Uso Limitado.</p>
+    <h2>Desconexión y eliminación</h2>
+    <p>Al desconectar Google desde la aplicación se eliminan la sesión guardada y la copia activa del calendario sincronizado y se solicita a Google revocar la autorización. Si no hay conexión, puedes revocar el acceso directamente en <a href="https://myaccount.google.com/connections">las conexiones de tu cuenta de Google</a>. Para eliminar todos los datos locales restantes, incluidos las preferencias y los recordatorios locales, cierra la aplicación y borra su carpeta de datos. Desinstalar con un gestor de paquetes puede conservar esa carpeta.</p>
+    <h2>Contacto</h2>
+    <p>Para consultas de privacidad o soporte, escribe a <a href="mailto:castanedajair133@gmail.com">castanedajair133@gmail.com</a>. No envíes contraseñas, tokens ni información privada de tus eventos en los reportes públicos de GitHub.</p>
+    <footer><a href="./">Inicio</a><a href="https://github.com/Anemone3/ko-calendar">Código fuente</a></footer>
+  </main>
+</body>
+</html>
