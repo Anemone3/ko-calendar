@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .truncate(false)
         .open(directory.join("instance.lock"))?;
     if instance.try_lock_exclusive().is_err() {
-        tracing::info!("Kokonut ya está ejecutándose. Usa su icono de bandeja.");
+        tracing::info!("ko-calendar ya está ejecutándose. Usa su icono de bandeja.");
         return Ok(());
     }
     let store = Store::open(&directory.join("kokonut.sqlite3"))?;
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let font = iced::Font::with_name(".AppleSystemUIFont");
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     let font = iced::Font::DEFAULT;
-    tracing::info!("Iniciando Kokonut {}", env!("CARGO_PKG_VERSION"));
+    tracing::info!("Iniciando ko-calendar {}", env!("CARGO_PKG_VERSION"));
     iced::daemon(
         move || {
             let (instance, store) = boot.borrow_mut().take().expect("boot runs once");

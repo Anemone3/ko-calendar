@@ -22,7 +22,7 @@ try {
         $env:KOKONUT_GOOGLE_CLIENT_SECRET = $taskClient.installed.client_secret
     }
     if (-not $env:KOKONUT_GOOGLE_CLIENT_ID -or $env:KOKONUT_GOOGLE_CLIENT_ID -notmatch '^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$') {
-        throw 'Configura una vez el cliente OAuth de escritorio de Kokonut con -GoogleClientFile o KOKONUT_GOOGLE_CLIENT_ID antes de empaquetar. En GitHub Actions viene del secreto KOKONUT_GOOGLE_CLIENT_ID del entorno release.'
+        throw 'Configura una vez el cliente OAuth de escritorio de ko-calendar con -GoogleClientFile o KOKONUT_GOOGLE_CLIENT_ID antes de empaquetar. En GitHub Actions viene del secreto KOKONUT_GOOGLE_CLIENT_ID del entorno release.'
     }
     Push-Location -LiteralPath $taskRoot
     try {
@@ -33,7 +33,7 @@ try {
         if ($Toolchain) { $taskArgs += "+$Toolchain" }
         $taskArgs += @('build', '--locked', '--release')
         & cargo @taskArgs
-        if ($LASTEXITCODE -ne 0) { throw 'Falló la compilación de Kokonut.' }
+        if ($LASTEXITCODE -ne 0) { throw 'Falló la compilación de ko-calendar.' }
         $taskDist = Join-Path $taskRoot 'dist'
         New-Item -ItemType Directory -Path $taskDist -Force | Out-Null
         Copy-Item -LiteralPath (Join-Path $taskRoot 'target/release/ko-calendar.exe') -Destination (Join-Path $taskDist 'ko-calendar.exe') -Force

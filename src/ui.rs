@@ -72,7 +72,7 @@ impl App {
                 )
                 .push(flat_button(
                     p,
-                    text("Salir de Kokonut").size(12),
+                    text("Salir de ko-calendar").size(12),
                     Message::Quit,
                 ));
         }
@@ -526,7 +526,7 @@ impl App {
     }
     fn notification_notice<'a>(&self, error: &'a str) -> Element<'a, Message> {
         let p = self.palette();
-        column![row![icon(Icon::Bell,22.,p.accent),text("El aviso necesita atención").size(18).font(medium()).width(Fill),icon_button(p,Icon::Close,"Volver",Message::DismissNotice)].spacing(10).align_y(Alignment::Center),space().height(5),text(error).size(13).color(p.secondary),text("Revisa las notificaciones de Kokonut en Windows y vuelve a probar desde la bandeja.").size(12).color(p.secondary),space().height(4),action(p,"Abrir ajustes de Windows",Message::OpenNotificationSettings),flat_button(p,text("Volver al calendario").size(12),Message::DismissNotice)].spacing(14).into()
+        column![row![icon(Icon::Bell,22.,p.accent),text("El aviso necesita atención").size(18).font(medium()).width(Fill),icon_button(p,Icon::Close,"Volver",Message::DismissNotice)].spacing(10).align_y(Alignment::Center),space().height(5),text(error).size(13).color(p.secondary),text("Revisa las notificaciones de ko-calendar en Windows y vuelve a probar desde la bandeja.").size(12).color(p.secondary),space().height(4),action(p,"Abrir ajustes de Windows",Message::OpenNotificationSettings),flat_button(p,text("Volver al calendario").size(12),Message::DismissNotice)].spacing(14).into()
     }
     fn settings_view(&self) -> Element<'_, Message> {
         let p = self.palette();

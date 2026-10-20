@@ -37,6 +37,7 @@ use windows::{
     core::{HSTRING, Interface, PCWSTR, w},
 };
 
+// Keep the existing internal identity so Windows notification preferences survive upgrades.
 pub const APP_ID: &str = "Kokonut.Calendar";
 // Retain event handlers for notifications still in Action Center; cap memory independently of history.
 static ACTIVE: Mutex<VecDeque<ToastNotification>> = Mutex::new(VecDeque::new());
@@ -77,20 +78,22 @@ pub fn register(directory: &Path) -> Result<(), String> {
     let png = directory.join("kokonut.png");
     std::fs::write(&ico, include_bytes!("../assets/kokonut.ico")).map_err(|e| e.to_string())?;
     std::fs::write(&png, include_bytes!("../assets/kokonut.png")).map_err(|e| e.to_string())?;
+    let executable = std::env::current_exe().map_err(|e| e.to_string())?;
     let key = windows_registry::CURRENT_USER
         .create("Software\\Classes\\AppUserModelId\\Kokonut.Calendar")
         .map_err(|e| e.to_string())?;
-    key.set_string("DisplayName", "Kokonut Calendar")
+    key.set_string("DisplayName", kokonut_calendar::APP_NAME)
         .map_err(|e| e.to_string())?;
     key.set_string("IconUri", png.to_string_lossy())
         .map_err(|e| e.to_string())?;
-    let executable = std::env::current_exe().map_err(|e| e.to_string())?;
+    key.set_string("ExecutablePath", executable.to_string_lossy())
+        .map_err(|e| e.to_string())?;
     let programs = std::env::var_os("APPDATA")
         .map(std::path::PathBuf::from)
         .ok_or("No se encontró el menú Inicio del usuario.")?
         .join("Microsoft/Windows/Start Menu/Programs");
     std::fs::create_dir_all(&programs).map_err(|e| e.to_string())?;
-    let shortcut = programs.join("Kokonut Calendar.lnk");
+    let shortcut = programs.join("ko-calendar.lnk");
     std::thread::spawn(move || -> Result<(), String> {
         let _apartment = Apartment::new(true).map_err(|e| e.to_string())?;
         let target = HSTRING::from(executable.as_os_str());
@@ -101,7 +104,7 @@ pub fn register(directory: &Path) -> Result<(), String> {
                 .map_err(|e| e.to_string())?;
             link.SetPath(PCWSTR(target.as_ptr()))
                 .map_err(|e| e.to_string())?;
-            link.SetDescription(w!("Calendario y recordatorios de Kokonut"))
+            link.SetDescription(w!("Calendario y recordatorios de ko-calendar"))
                 .map_err(|e| e.to_string())?;
             link.SetIconLocation(PCWSTR(icon.as_ptr()), 0)
                 .map_err(|e| e.to_string())?;
@@ -121,17 +124,21 @@ pub fn register(directory: &Path) -> Result<(), String> {
         Ok(())
     })
     .join()
-    .map_err(|_| "No se pudo registrar el acceso directo de Kokonut.".to_string())??;
+    .map_err(|_| "No se pudo registrar el acceso directo de ko-calendar.".to_string())??;
+    let legacy_shortcut = programs.join("Kokonut Calendar.lnk");
+    if legacy_shortcut.exists() {
+        std::fs::remove_file(legacy_shortcut).map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 
 fn availability(setting: NotificationSetting) -> Result<(), String> {
     match setting{
         NotificationSetting::Enabled=>Ok(()),
-        NotificationSetting::DisabledForApplication=>Err("Windows tiene desactivadas las notificaciones de Kokonut. Revisa Configuración → Sistema → Notificaciones → Kokonut Calendar.".into()),
+        NotificationSetting::DisabledForApplication=>Err("Windows tiene desactivadas las notificaciones de ko-calendar. Revisa Configuración → Sistema → Notificaciones → ko-calendar.".into()),
         NotificationSetting::DisabledForUser=>Err("Las notificaciones de Windows están desactivadas para este usuario.".into()),
         NotificationSetting::DisabledByGroupPolicy=>Err("Una directiva del sistema bloquea las notificaciones.".into()),
-        NotificationSetting::DisabledByManifest=>Err("Windows no reconoce correctamente el registro de notificaciones de Kokonut.".into()),
+        NotificationSetting::DisabledByManifest=>Err("Windows no reconoce correctamente el registro de notificaciones de ko-calendar.".into()),
         _=>Err("Windows no permite mostrar esta notificación.".into()),
     }
 }
@@ -141,7 +148,7 @@ fn banners_enabled() -> Result<(), String> {
         "Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\Kokonut.Calendar",
     ) && settings.get_u32("ShowBanner").ok() == Some(0)
     {
-        return Err("Los banners de Kokonut están desactivados en Windows. Actívalos en Configuración → Sistema → Notificaciones → Kokonut Calendar.".into());
+        return Err("Los banners de ko-calendar están desactivados en Windows. Actívalos en Configuración → Sistema → Notificaciones → ko-calendar.".into());
     }
     Ok(())
 }

@@ -24,7 +24,7 @@ const SCOPES: [&str; 2] = [
     "https://www.googleapis.com/auth/calendar.events.readonly",
     "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
 ];
-const MISSING_CLIENT: &str = "Google Sync aún no está disponible en esta compilación. Se necesita una versión de Kokonut con la conexión de Google habilitada.";
+const MISSING_CLIENT: &str = "Google Sync aún no está disponible en esta compilación. Se necesita una versión de ko-calendar con la conexión de Google habilitada.";
 
 // Set once by the maintainer when compiling releases, never by each end user.
 fn client_id() -> Result<String, String> {
@@ -212,9 +212,9 @@ async fn callback(listener: &TcpListener, state: &CsrfToken) -> Result<String, S
         let denied =
             matches!(&result,Err(error) if error=="No se autorizó la conexión con Google.");
         let body = if valid {
-            "Autorización recibida. Puedes cerrar esta pestaña y volver a Kokonut."
+            "Autorización recibida. Puedes cerrar esta pestaña y volver a ko-calendar."
         } else {
-            "No se completó la conexión. Vuelve a Kokonut para intentarlo otra vez."
+            "No se completó la conexión. Vuelve a ko-calendar para intentarlo otra vez."
         };
         let status = if valid { "200 OK" } else { "400 Bad Request" };
         let response = format!(

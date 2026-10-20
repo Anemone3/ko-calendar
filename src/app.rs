@@ -185,12 +185,12 @@ impl App {
         (app, tasks)
     }
     pub fn title(&self, _: window::Id) -> String {
-        "Kokonut Calendar".into()
+        kokonut_calendar::APP_NAME.into()
     }
     pub fn theme(&self, _: window::Id) -> Theme {
         let p = self.palette();
         Theme::custom(
-            "Kokonut",
+            kokonut_calendar::APP_NAME,
             iced::theme::Palette {
                 background: p.background,
                 text: p.text,
@@ -612,8 +612,8 @@ impl App {
                     return self.open();
                 }
                 if let Err(error) = self.store.schedule_test(
-                    "Tu aviso de Kokonut",
-                    "Este es un aviso de prueba de Kokonut.",
+                    "Tu aviso de ko-calendar",
+                    "Este es un aviso de prueba de ko-calendar.",
                     Local::now().timestamp() + 2,
                     false,
                     None,

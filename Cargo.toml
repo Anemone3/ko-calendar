@@ -1,6 +1,6 @@
 [package]
 name = "ko-calendar"
-version = "0.4.4"
+version = "0.4.5"
 edition = "2024"
 rust-version = "1.90"
 description = "Calendario con Google para escritorios Linux y Windows."
