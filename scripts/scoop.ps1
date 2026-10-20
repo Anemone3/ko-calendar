@@ -55,6 +55,35 @@ try {
 finally { Remove-Item -LiteralPath $taskArchivePath -Force }
 
 if ($Update) {
+    $taskMetadataNames = @('ko-calendar-bin.PKGBUILD', 'ko-calendar-bin.SRCINFO')
+    $taskAvailableMetadata = @($taskMetadataNames | Where-Object { $_ -in @($taskRelease.assets.name) })
+    if ($taskAvailableMetadata.Count -ne 0 -and $taskAvailableMetadata.Count -ne 2) {
+        throw 'La release no contiene los dos archivos de metadatos de Arch.'
+    }
+    $taskMetadataFiles = @()
+    foreach ($taskAssetName in $taskAvailableMetadata) {
+        $taskPattern = '(?m)^([a-f0-9]{64})\s+\*?' + [regex]::Escape($taskAssetName) + '\r?$'
+        $taskMetadataHash = [regex]::Match($taskChecksums, $taskPattern)
+        if (-not $taskMetadataHash.Success) { throw "Falta el hash de $taskAssetName." }
+        $taskTemporaryMetadata = [IO.Path]::GetTempFileName()
+        try {
+            Invoke-WebRequest "$taskBaseUrl/$taskAssetName" -OutFile $taskTemporaryMetadata
+            if ((Get-FileHash -LiteralPath $taskTemporaryMetadata -Algorithm SHA256).Hash.ToLowerInvariant() -ne $taskMetadataHash.Groups[1].Value) {
+                throw "Hash incorrecto de $taskAssetName."
+            }
+            $taskBytes = [IO.File]::ReadAllBytes($taskTemporaryMetadata)
+            $taskVersionPattern = '(?m)^\s*pkgver\s*=\s*' + [regex]::Escape($taskManifest.version) + '\r?$'
+            if ([Text.Encoding]::UTF8.GetString($taskBytes) -notmatch $taskVersionPattern) {
+                throw "La versión de $taskAssetName no coincide con la release."
+            }
+            $taskFileName = if ($taskAssetName.EndsWith('.SRCINFO')) { '.SRCINFO' } else { 'PKGBUILD' }
+            $taskMetadataFiles += @{ Path = (Join-Path (Split-Path -Parent $PSScriptRoot) "packaging/aur/ko-calendar-bin/$taskFileName"); Bytes = $taskBytes }
+        }
+        finally { Remove-Item -LiteralPath $taskTemporaryMetadata -Force }
+    }
+    foreach ($taskMetadata in $taskMetadataFiles) {
+        [IO.File]::WriteAllBytes($taskMetadata.Path, $taskMetadata.Bytes)
+    }
     $taskJson = [regex]::Replace($taskJson, '(?m)^ +', { param($match) $match.Value + $match.Value })
     [IO.File]::WriteAllText($taskManifestPath, "$taskJson`n", [Text.UTF8Encoding]::new($false))
 }
