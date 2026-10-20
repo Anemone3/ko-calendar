@@ -139,7 +139,7 @@ pub fn notify(reminders: Vec<Reminder>, sender: UnboundedSender<NativeEvent>, ki
             };
             let mut notification = notify_rust::Notification::new();
             notification
-                .appname("Kokonut Calendar")
+                .appname(kokonut_calendar::APP_NAME)
                 .summary(&title)
                 .body(&first.body);
             #[cfg(target_os = "linux")]
