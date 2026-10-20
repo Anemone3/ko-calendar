@@ -1,12 +1,12 @@
 {
-    "version": "0.4.3",
+    "version": "0.4.4",
     "description": "Calendario con Google para escritorios Linux y Windows.",
     "homepage": "https://github.com/Anemone3/ko-calendar",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Anemone3/ko-calendar/releases/download/v0.4.3/ko-calendar-windows-x64.zip",
-            "hash": "12325f42b0d4b405193da065389638ad63c0adfaf1b31d7a083686e1badf9a23"
+            "url": "https://github.com/Anemone3/ko-calendar/releases/download/v0.4.4/ko-calendar-windows-x64.zip",
+            "hash": "346c0629de1e69876b1e965058ddb063407b1935ce15ba42c4eb1e07dfc1fef0"
         }
     },
     "bin": "ko-calendar.exe",

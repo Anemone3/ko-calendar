@@ -24,7 +24,7 @@ conflicts=("$_pkgname")
 # El binario ya viene optimizado y sin símbolos (profile.release strip = true).
 options=('!strip' '!debug')
 source_x86_64=("$_pkgname-linux-$CARCH-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_pkgname-linux-$CARCH.tar.gz")
-sha256sums_x86_64=('SKIP') # updpkgsums lo reemplaza; no publicar con SKIP
+sha256sums_x86_64=('fa213a4f77f8c9e1a63fac6eae5a39a2249134b4994883a26753f9e76d2a9242')
 
 package() {
   cd "$_pkgname-linux-$CARCH"

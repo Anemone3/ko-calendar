@@ -3,9 +3,9 @@ name: Scoop
 on:
   push:
     branches: [main]
-    paths: ['bucket/**', 'scripts/scoop.ps1', '.github/workflows/scoop.yml']
+    paths: ['bucket/**', 'packaging/aur/**', 'scripts/scoop.ps1', '.github/workflows/scoop.yml']
   pull_request:
-    paths: ['bucket/**', 'scripts/scoop.ps1', '.github/workflows/scoop.yml']
+    paths: ['bucket/**', 'packaging/aur/**', 'scripts/scoop.ps1', '.github/workflows/scoop.yml']
   workflow_dispatch:
   schedule:
     - cron: '20 */4 * * *'
@@ -47,8 +47,11 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           branch: codex/scoop-update
-          add-paths: bucket/ko-calendar.json
-          commit-message: Update Scoop manifest from the latest release
-          title: Update Scoop manifest
-          body: Updates the version and SHA-256 from the published ko-calendar release. The download is verified before proposing the change.
+          add-paths: |
+            bucket/ko-calendar.json
+            packaging/aur/ko-calendar-bin/PKGBUILD
+            packaging/aur/ko-calendar-bin/.SRCINFO
+          commit-message: Update package manifests from the latest release
+          title: Update package manifests
+          body: Updates Scoop and Arch package metadata from the published release. Downloads and SHA-256 checksums are verified before proposing the change.
           delete-branch: true
