@@ -2,8 +2,8 @@ name: Release
 
 # Runs only for version tags (git tag v0.4.3 && git push origin v0.4.3).
 # Builds the official binaries with the Google OAuth client compiled in, publishes the
-# GitHub Release and updates ko-calendar-bin on the AUR. Scoop picks the release up on
-# its own (Excavator in the bucket). Secrets come from the "release" environment
+# GitHub Release and optionally updates ko-calendar-bin on the AUR. scoop.yml proposes
+# manifest updates in this repository. Secrets come from the "release" environment
 # (tags v* only): KOKONUT_GOOGLE_CLIENT_ID, KOKONUT_GOOGLE_CLIENT_SECRET,
 # AUR_SSH_PRIVATE_KEY, AUR_USERNAME, AUR_EMAIL. None of them is ever written to the repo.
 on:

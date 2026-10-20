@@ -1,0 +1,54 @@
+name: Scoop
+
+on:
+  push:
+    branches: [main]
+    paths: ['bucket/**', 'scripts/scoop.ps1', '.github/workflows/scoop.yml']
+  pull_request:
+    paths: ['bucket/**', 'scripts/scoop.ps1', '.github/workflows/scoop.yml']
+  workflow_dispatch:
+  schedule:
+    - cron: '20 */4 * * *'
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate manifest and release download
+        shell: pwsh
+        run: ./scripts/scoop.ps1
+
+  update:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency: scoop-update
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Update from the latest release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/scoop.ps1 -Update
+      - name: Propose the manifest update
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: codex/scoop-update
+          add-paths: bucket/ko-calendar.json
+          commit-message: Update Scoop manifest from the latest release
+          title: Update Scoop manifest
+          body: Updates the version and SHA-256 from the published ko-calendar release. The download is verified before proposing the change.
+          delete-branch: true
