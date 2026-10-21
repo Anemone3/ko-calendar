@@ -9,6 +9,7 @@ Consulta tus eventos y recibe recordatorios desde la bandeja del sistema. Las ve
 Abre PowerShell e instala la aplicación:
 
 ```powershell
+scoop install git
 scoop bucket add ko https://github.com/Anemone3/ko-calendar
 scoop install ko/ko-calendar
 ko-calendar
