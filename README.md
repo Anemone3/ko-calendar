@@ -95,4 +95,10 @@ La conexión con Google está en producción. Mientras se completa su verificaci
 
 Para retirar la autorización y borrar la copia activa del calendario sincronizado, desconecta Google desde la aplicación. También puedes gestionar el acceso en [tu cuenta de Google](https://myaccount.google.com/connections).
 
+## Sonidos personalizados
+
+En **Configuración → Carpeta de sonidos · MP3, WAV y más**, añade archivos MP3, WAV, OGG/OGA (Vorbis), FLAC, M4A (AAC/ALAC) o AAC de hasta 20 MB. La lista se actualiza al regresar a la app y cada dos segundos mientras Configuración está abierta, sin reiniciar. Puedes elegir y probar el sonido de notificación y el aviso anticipado por separado. Cada sonido se reproduce una vez, hasta 30 segundos.
+
+Las actualizaciones conservan tus archivos y preferencias. Los sonidos incluidos son `ko-tify.mp3` y `alarm.mp3`.
+
 [Política de privacidad](https://anemone3.github.io/ko-calendar/privacy.html) · [Reportar un problema](https://github.com/Anemone3/ko-calendar/issues) · [Licencia MIT](LICENSE)

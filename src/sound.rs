@@ -2,7 +2,6 @@ use kokonut_calendar::sound_settings::{ADVANCE_FILE, DEFAULT_FILE, RENAMED_FILES
 use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 use std::{
     fs,
-    io::BufReader,
     path::{Component, Path, PathBuf},
     sync::{
         Arc,
@@ -43,8 +42,13 @@ pub fn initialize(data: &Path) -> Result<Vec<String>, String> {
             .unwrap_or_else(|| embedded.to_vec());
         fs::write(&default, bytes).map_err(|e| format!("No se pudo instalar el sonido: {e}"))?;
     }
-    let mut files = fs::read_dir(&directory)
-        .map_err(|e| e.to_string())?
+    list_files(data)
+}
+
+/// Re-scan the same directory opened by the settings panel, without reinstalling defaults.
+pub fn list_files(data: &Path) -> Result<Vec<String>, String> {
+    let mut files = fs::read_dir(directory(data))
+        .map_err(|e| format!("No se pudo leer la carpeta de sonidos: {e}"))?
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_ok_and(|t| t.is_file()))
         .filter_map(|entry| entry.file_name().into_string().ok())
@@ -59,19 +63,32 @@ fn valid_name(name: &str) -> bool {
     matches!(components.next(), Some(Component::Normal(_)))
         && components.next().is_none()
         && !name.contains(['/', '\\', ':'])
-        && name.to_ascii_lowercase().ends_with(".mp3")
+        && Path::new(name)
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| {
+                matches!(
+                    extension.to_ascii_lowercase().as_str(),
+                    "mp3" | "wav" | "ogg" | "oga" | "flac" | "m4a" | "aac"
+                )
+            })
 }
 
 pub fn file_path(data: &Path, name: &str) -> Result<PathBuf, String> {
     if !valid_name(name) {
-        return Err("Elige un archivo MP3 de la carpeta de sonidos.".into());
+        return Err(
+            "Elige un audio MP3, WAV, OGG, FLAC, M4A o AAC de la carpeta de sonidos.".into(),
+        );
     }
     let path = directory(data).join(name);
-    let size = fs::metadata(&path)
-        .map_err(|_| "No se encontró el sonido. Revisa la carpeta de sonidos.".to_string())?
-        .len();
+    let metadata = fs::metadata(&path)
+        .map_err(|_| "No se encontró el sonido. Revisa la carpeta de sonidos.".to_string())?;
+    if !metadata.is_file() {
+        return Err("Elige un archivo de audio de la carpeta de sonidos.".into());
+    }
+    let size = metadata.len();
     if size == 0 || size > 20 * 1024 * 1024 {
-        return Err("Usa un MP3 de entre 1 byte y 20 MB.".into());
+        return Err("Usa un archivo de audio de entre 1 byte y 20 MB.".into());
     }
     Ok(path)
 }
@@ -93,8 +110,9 @@ impl Player {
 
     pub fn play(&self, path: PathBuf, volume: u8, generation: u64) -> Result<(), String> {
         let file = fs::File::open(path).map_err(|e| format!("No se pudo abrir el sonido: {e}"))?;
-        let source = Decoder::try_from(BufReader::new(file))
-            .map_err(|_| "El archivo no contiene un MP3 válido.".to_string())?;
+        let source = Decoder::try_from(file).map_err(|_| {
+            "El archivo no contiene audio válido en un formato compatible.".to_string()
+        })?;
         if self.generation.load(Ordering::SeqCst) != generation {
             return Ok(());
         }
@@ -172,6 +190,100 @@ mod tests {
         );
         fs::remove_dir_all(data).unwrap();
     }
+
+    struct TestDirectory(PathBuf);
+
+    impl TestDirectory {
+        fn new() -> Self {
+            let unique = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            Self(
+                std::env::temp_dir()
+                    .join(format!("kokonut-sounds-{}-{unique}", std::process::id())),
+            )
+        }
+    }
+
+    impl Drop for TestDirectory {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn added_audio_files_appear_on_refresh_and_restart_and_removals_disappear() {
+        let data = TestDirectory::new();
+        assert_eq!(initialize(&data.0).unwrap().len(), 2);
+        let folder = directory(&data.0);
+        let names = [
+            "Mi aviso.MP3",
+            "audio.wav",
+            "audio.OGG",
+            "audio.oga",
+            "audio.flac",
+            "audio.m4a",
+            "audio.aac",
+        ];
+        for name in names {
+            fs::write(folder.join(name), DEFAULT_SOUND).unwrap();
+        }
+        fs::write(folder.join("notas.txt"), "not audio").unwrap();
+        fs::create_dir(folder.join("carpeta.mp3")).unwrap();
+
+        let files = list_files(&data.0).unwrap();
+        assert_eq!(files.len(), names.len() + 2);
+        for name in names {
+            assert!(files.contains(&name.to_string()), "{name}");
+            assert_eq!(file_path(&data.0, name).unwrap(), folder.join(name));
+        }
+        assert!(
+            files
+                .windows(2)
+                .all(|pair| pair[0].to_lowercase() <= pair[1].to_lowercase())
+        );
+        assert!(file_path(&data.0, "carpeta.mp3").is_err());
+        assert_eq!(initialize(&data.0).unwrap(), files);
+        assert_eq!(
+            fs::read(folder.join("Mi aviso.MP3")).unwrap(),
+            DEFAULT_SOUND
+        );
+
+        fs::remove_file(folder.join("Mi aviso.MP3")).unwrap();
+        assert!(
+            !list_files(&data.0)
+                .unwrap()
+                .contains(&"Mi aviso.MP3".to_string())
+        );
+        assert!(file_path(&data.0, "Mi aviso.MP3").is_err());
+    }
+
+    #[test]
+    fn wav_audio_can_be_decoded() {
+        // Eight PCM samples, mono, 8 kHz, 16 bit.
+        let mut wav = Vec::new();
+        wav.extend_from_slice(b"RIFF");
+        wav.extend_from_slice(&52_u32.to_le_bytes());
+        wav.extend_from_slice(b"WAVEfmt ");
+        wav.extend_from_slice(&16_u32.to_le_bytes());
+        wav.extend_from_slice(&1_u16.to_le_bytes());
+        wav.extend_from_slice(&1_u16.to_le_bytes());
+        wav.extend_from_slice(&8000_u32.to_le_bytes());
+        wav.extend_from_slice(&16000_u32.to_le_bytes());
+        wav.extend_from_slice(&2_u16.to_le_bytes());
+        wav.extend_from_slice(&16_u16.to_le_bytes());
+        wav.extend_from_slice(b"data");
+        wav.extend_from_slice(&16_u32.to_le_bytes());
+        for _ in 0..8 {
+            wav.extend_from_slice(&1000_i16.to_le_bytes());
+        }
+        let decoder = Decoder::try_from(std::io::Cursor::new(wav)).unwrap();
+        assert_eq!(decoder.sample_rate(), 8000);
+        assert_eq!(decoder.channels(), 1);
+        assert_eq!(decoder.count(), 8);
+    }
+
     #[test]
     fn supplied_sound_decodes_to_a_short_non_silent_clip() {
         let decoder = Decoder::try_from(std::io::Cursor::new(DEFAULT_SOUND)).unwrap();
@@ -192,11 +304,21 @@ mod tests {
             "alarm.mp3:stream",
             "/alarm.mp3",
             "https://example.com/a.mp3",
-            "alarm.wav",
+            "alarm.txt",
         ] {
             assert!(!valid_name(name), "{name}");
         }
         assert!(valid_name("Mi aviso.MP3"));
+        for name in [
+            "aviso.wav",
+            "aviso.OGG",
+            "aviso.oga",
+            "aviso.flac",
+            "aviso.m4a",
+            "aviso.aac",
+        ] {
+            assert!(valid_name(name), "{name}");
+        }
     }
     #[test]
     fn advance_audio_is_distinct_non_silent_and_fits_the_playback_limit() {

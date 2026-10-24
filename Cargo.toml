@@ -1,6 +1,6 @@
 [package]
 name = "ko-calendar"
-version = "0.4.5"
+version = "0.4.6"
 edition = "2024"
 rust-version = "1.90"
 description = "Calendario con Google para escritorios Linux y Windows."
@@ -33,7 +33,7 @@ regex-automata = { version = "0.4", default-features = false, features = ["std",
 sha2 = "0.10"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-rodio = { version = "0.21.1", default-features = false, features = ["playback", "mp3"] }
+rodio = { version = "0.21.1", default-features = false, features = ["playback", "mp3", "wav", "vorbis", "flac", "mp4", "symphonia-alac"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 tray-icon = { version = "0.26", default-features = false, features = ["ksni"] }

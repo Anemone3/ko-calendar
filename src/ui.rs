@@ -668,7 +668,7 @@ impl App {
         }
         content = content.push(flat_button(
             p,
-            text("Carpeta de sonidos · MP3").size(11),
+            text("Carpeta de sonidos · MP3, WAV y más").size(11),
             Message::SoundFolder,
         ));
         if let Some(error) = &self.sound_error {

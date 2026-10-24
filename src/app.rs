@@ -58,6 +58,7 @@ pub enum Message {
     SoundPreview(SoundKind),
     SoundStop,
     SoundFolder,
+    RefreshSounds,
     SoundCompleted(u64, SoundKind, Result<(), String>),
     GoogleConnect,
     GoogleCancel,
@@ -439,6 +440,7 @@ impl App {
                     key: keyboard::Key::Named(keyboard::key::Named::Escape),
                     ..
                 }) => Some(Message::Escape),
+                iced::Event::Window(window::Event::Focused) => Some(Message::RefreshSounds),
                 _ => None,
             }),
         ];
@@ -446,6 +448,12 @@ impl App {
             list.push(
                 iced::time::every(std::time::Duration::from_secs(60)).map(|_| Message::Minute),
             );
+            if self.settings_open {
+                list.push(
+                    iced::time::every(std::time::Duration::from_secs(2))
+                        .map(|_| Message::RefreshSounds),
+                );
+            }
         }
         if self.google_session.is_some() {
             list.push(
@@ -703,6 +711,18 @@ impl App {
                 self.expanded = false;
                 self.agenda_open = false;
                 self.detail = None;
+            }
+            Message::RefreshSounds => {
+                if !self.settings_open {
+                    return Task::none();
+                }
+                match crate::sound::list_files(DATA_DIR.get().unwrap()) {
+                    Ok(files) => {
+                        self.sound_files = files;
+                        return Task::none();
+                    }
+                    Err(error) => self.sound_error = Some(error),
+                }
             }
             Message::SoundEnabled(enabled) => {
                 self.sound_settings.enabled = enabled;
