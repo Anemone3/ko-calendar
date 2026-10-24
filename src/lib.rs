@@ -5,4 +5,5 @@ pub mod google;
 pub mod model;
 pub mod reminders;
 pub mod sound_settings;
+pub mod startup;
 pub mod store;

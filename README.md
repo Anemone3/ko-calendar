@@ -101,4 +101,10 @@ En **Configuración → Carpeta de sonidos · MP3, WAV y más**, añade archivos
 
 Las actualizaciones conservan tus archivos y preferencias. Los sonidos incluidos son `ko-tify.mp3` y `alarm.mp3`.
 
+## Inicio automático
+
+Activa **Configuración → Iniciar al arrancar** para abrir ko-calendar en la bandeja al iniciar sesión en Windows o Linux. La casilla muestra un cuadrado azul interior al activarse; por defecto está desactivada. Puedes desactivarla desde el mismo control.
+
+Windows usa el [inicio automático del usuario](https://learn.microsoft.com/en-us/windows/win32/setupapi/run-and-runonce-registry-keys) y conserva una ruta estable al actualizar con Scoop. Linux usa `ko-calendar.desktop` en la [carpeta de inicio automático del escritorio](https://specifications.freedesktop.org/autostart/latest/) (`$XDG_CONFIG_HOME/autostart`, normalmente `~/.config/autostart`); requiere una sesión de escritorio que procese XDG Autostart.
+
 [Política de privacidad](https://anemone3.github.io/ko-calendar/privacy.html) · [Reportar un problema](https://github.com/Anemone3/ko-calendar/issues) · [Licencia MIT](LICENSE)
