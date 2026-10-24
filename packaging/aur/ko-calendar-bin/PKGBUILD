@@ -3,7 +3,7 @@
 # aparecen en este archivo: vienen de los secretos de GitHub del entorno «release».
 pkgname=ko-calendar-bin
 _pkgname=ko-calendar
-pkgver=0.4.6
+pkgver=0.4.7
 pkgrel=1
 pkgdesc="Calendario mínimo de bandeja con avisos de Google Calendar (binario oficial)"
 arch=('x86_64')
@@ -24,7 +24,7 @@ conflicts=("$_pkgname")
 # El binario ya viene optimizado y sin símbolos (profile.release strip = true).
 options=('!strip' '!debug')
 source_x86_64=("$_pkgname-linux-$CARCH-$pkgver.tar.gz::$url/releases/download/v$pkgver/$_pkgname-linux-$CARCH.tar.gz")
-sha256sums_x86_64=('9b59d6bc5fc8eaf9b59fbc35577e977d2ef75d00b3275621076e4c16dbf7ccf6')
+sha256sums_x86_64=('dbf640988fb19989388d06f5e3cbd31658bbbee929f86cc24c80c5f756309d1f')
 
 package() {
   cd "$_pkgname-linux-$CARCH"
