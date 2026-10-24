@@ -9,6 +9,7 @@ use kokonut_calendar::{
     google::{self, Session, Snapshot},
     model::{Event, Reminder},
     sound_settings::{SoundKind, SoundSettings, without_duplicate_notifications},
+    startup,
     store::Store,
 };
 use std::{fs::File, sync::OnceLock};
@@ -50,6 +51,7 @@ pub enum Message {
     Minute,
     Settings,
     CloseSettings,
+    StartupEnabled(bool),
     SoundEnabled(bool),
     SoundFile(SoundKind, String),
     AdvanceEnabled(bool),
@@ -86,6 +88,8 @@ pub struct App {
     pub notification_status: Option<Result<String, String>>,
     pub generation: u64,
     pub settings_open: bool,
+    pub startup_enabled: bool,
+    pub startup_error: Option<String>,
     pub google_phase: GooglePhase,
     pub google_session: Option<Session>,
     pub google_snapshot: Option<Snapshot>,
@@ -151,6 +155,8 @@ impl App {
             notification_status: None,
             generation: 0,
             settings_open: std::env::args().any(|a| a == "--settings"),
+            startup_enabled: false,
+            startup_error: None,
             google_phase: GooglePhase::Loading,
             google_session: None,
             google_snapshot: snapshot,
@@ -169,6 +175,7 @@ impl App {
             google_abort: None,
             _instance: instance,
         };
+        app.refresh_startup();
         let hidden = std::env::args().any(|a| a == "--tray")
             && app.native.tray.is_some()
             && app.notification_error.is_none();
@@ -226,7 +233,13 @@ impl App {
                         0.
                     }
                     + if self.google_error.is_some() { 96. } else { 0. }
-                    + if self.sound_error.is_some() { 64. } else { 0. },
+                    + if self.sound_error.is_some() { 64. } else { 0. }
+                    + if startup::supported() { 44. } else { 0. }
+                    + if self.startup_error.is_some() {
+                        48.
+                    } else {
+                        0.
+                    },
             );
         }
         let base = if self.expanded {
@@ -423,6 +436,15 @@ impl App {
             .save_sound_settings(&self.sound_settings)
             .err()
             .map(|error| format!("No se pudo guardar el sonido: {error}"));
+    }
+    fn refresh_startup(&mut self) {
+        match startup::enabled() {
+            Ok(enabled) => {
+                self.startup_enabled = enabled;
+                self.startup_error = None;
+            }
+            Err(error) => self.startup_error = Some(error),
+        }
     }
     fn clear_google_view(&mut self) {
         self.google_snapshot = None;
@@ -700,6 +722,7 @@ impl App {
             }
             Message::Settings => {
                 self.settings_open = true;
+                self.refresh_startup();
                 match crate::sound::initialize(DATA_DIR.get().unwrap()) {
                     Ok(files) => self.sound_files = files,
                     Err(error) => self.sound_error = Some(error),
@@ -712,6 +735,13 @@ impl App {
                 self.agenda_open = false;
                 self.detail = None;
             }
+            Message::StartupEnabled(enabled) => match startup::set_enabled(enabled) {
+                Ok(()) => {
+                    self.startup_enabled = enabled;
+                    self.startup_error = None;
+                }
+                Err(error) => self.startup_error = Some(error),
+            },
             Message::RefreshSounds => {
                 if !self.settings_open {
                     return Task::none();

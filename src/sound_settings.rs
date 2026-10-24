@@ -3,18 +3,6 @@ use serde::{Deserialize, Serialize};
 pub const ADVANCE_SECONDS: i64 = 2 * 60;
 pub const DEFAULT_FILE: &str = "ko-tify.mp3";
 pub const ADVANCE_FILE: &str = "alarm.mp3";
-pub const RENAMED_FILES: [(&str, &str); 2] = [
-    ("kokonut.mp3", DEFAULT_FILE),
-    ("anticipado.mp3", ADVANCE_FILE),
-];
-
-pub fn current_file(name: &str) -> &str {
-    RENAMED_FILES
-        .iter()
-        .find_map(|(previous, current)| (*previous == name).then_some(*current))
-        .unwrap_or(name)
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SoundKind {
     Notification,

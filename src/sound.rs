@@ -1,4 +1,4 @@
-use kokonut_calendar::sound_settings::{ADVANCE_FILE, DEFAULT_FILE, RENAMED_FILES, current_file};
+use kokonut_calendar::sound_settings::{ADVANCE_FILE, DEFAULT_FILE};
 use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 use std::{
     fs,
@@ -21,14 +21,6 @@ pub fn initialize(data: &Path) -> Result<Vec<String>, String> {
     let directory = directory(data);
     fs::create_dir_all(&directory)
         .map_err(|e| format!("No se pudo crear la carpeta de sonidos: {e}"))?;
-    for (previous, current) in RENAMED_FILES {
-        let previous = directory.join(previous);
-        let current = directory.join(current);
-        if previous.is_file() && !current.exists() {
-            fs::rename(previous, current)
-                .map_err(|e| format!("No se pudo actualizar el nombre del sonido: {e}"))?;
-        }
-    }
     for (name, embedded) in [(DEFAULT_FILE, DEFAULT_SOUND), (ADVANCE_FILE, ADVANCE_SOUND)] {
         let default = directory.join(name);
         if default.exists() {
@@ -52,7 +44,7 @@ pub fn list_files(data: &Path) -> Result<Vec<String>, String> {
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_ok_and(|t| t.is_file()))
         .filter_map(|entry| entry.file_name().into_string().ok())
-        .filter(|name| valid_name(name) && current_file(name) == name)
+        .filter(|name| valid_name(name))
         .collect::<Vec<_>>();
     files.sort_by_key(|name| name.to_lowercase());
     Ok(files)
@@ -149,27 +141,34 @@ mod tests {
         data
     }
     #[test]
-    fn legacy_sound_files_keep_their_contents_under_the_new_names() {
+    fn legacy_sound_names_remain_visible_and_keep_their_contents() {
         let data = test_data();
         fs::write(directory(&data).join("kokonut.mp3"), b"my notification").unwrap();
         fs::write(directory(&data).join("anticipado.mp3"), b"my alarm").unwrap();
         fs::write(directory(&data).join("personal.mp3"), b"my custom sound").unwrap();
         let files = initialize(&data).unwrap();
-        assert_eq!(files, ["alarm.mp3", "ko-tify.mp3", "personal.mp3"]);
         assert_eq!(
-            fs::read(directory(&data).join("ko-tify.mp3")).unwrap(),
+            files,
+            [
+                "alarm.mp3",
+                "anticipado.mp3",
+                "ko-tify.mp3",
+                "kokonut.mp3",
+                "personal.mp3"
+            ]
+        );
+        assert_eq!(
+            fs::read(file_path(&data, "kokonut.mp3").unwrap()).unwrap(),
             b"my notification"
         );
         assert_eq!(
-            fs::read(directory(&data).join("alarm.mp3")).unwrap(),
+            fs::read(file_path(&data, "anticipado.mp3").unwrap()).unwrap(),
             b"my alarm"
         );
         assert_eq!(
             fs::read(directory(&data).join("personal.mp3")).unwrap(),
             b"my custom sound"
         );
-        assert!(!directory(&data).join("kokonut.mp3").exists());
-        assert!(!directory(&data).join("anticipado.mp3").exists());
         assert_eq!(initialize(&data).unwrap(), files);
         fs::remove_dir_all(data).unwrap();
     }
@@ -179,7 +178,7 @@ mod tests {
         fs::write(directory(&data).join("kokonut.mp3"), b"previous sound").unwrap();
         fs::write(directory(&data).join("ko-tify.mp3"), b"new sound").unwrap();
         let files = initialize(&data).unwrap();
-        assert_eq!(files, ["alarm.mp3", "ko-tify.mp3"]);
+        assert_eq!(files, ["alarm.mp3", "ko-tify.mp3", "kokonut.mp3"]);
         assert_eq!(
             fs::read(directory(&data).join("ko-tify.mp3")).unwrap(),
             b"new sound"
@@ -219,6 +218,8 @@ mod tests {
         let folder = directory(&data.0);
         let names = [
             "Mi aviso.MP3",
+            "anticipado.mp3",
+            "kokonut.mp3",
             "audio.wav",
             "audio.OGG",
             "audio.oga",

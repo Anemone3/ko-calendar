@@ -635,11 +635,12 @@ impl App {
             content = content.push(self.sound_picker(SoundKind::Notification));
         }
         content = content.push(divider(p)).push(
-            checkbox(self.sound_settings.advance_enabled)
-                .label("Avisar 2 minutos antes")
-                .on_toggle(Message::AdvanceEnabled)
-                .size(17)
-                .text_size(13),
+            square_checkbox(
+                p,
+                "Avisar 2 minutos antes",
+                self.sound_settings.advance_enabled,
+            )
+            .on_toggle(Message::AdvanceEnabled),
         );
         if self.sound_settings.advance_enabled {
             content = content
@@ -674,6 +675,15 @@ impl App {
         if let Some(error) = &self.sound_error {
             content = content.push(text(error).size(11).color(p.error));
         }
+        if kokonut_calendar::startup::supported() {
+            content = content.push(divider(p)).push(
+                square_checkbox(p, "Iniciar al arrancar", self.startup_enabled)
+                    .on_toggle(Message::StartupEnabled),
+            );
+        }
+        if let Some(error) = &self.startup_error {
+            content = content.push(text(error).size(11).color(p.error));
+        }
         content.into()
     }
     fn sound_picker(&self, kind: SoundKind) -> Element<'_, Message> {
@@ -702,6 +712,41 @@ impl App {
         .align_y(Alignment::Center)
         .into()
     }
+}
+fn square_checkbox<'a>(
+    p: Palette,
+    label: &'a str,
+    checked: bool,
+) -> iced::widget::Checkbox<'a, Message> {
+    checkbox(checked)
+        .label(label)
+        .size(17)
+        .text_size(13)
+        .icon(checkbox::Icon {
+            font: Font::DEFAULT,
+            code_point: '\u{25A0}',
+            size: Some(16.into()),
+            line_height: text::LineHeight::Relative(1.),
+            shaping: text::Shaping::Basic,
+        })
+        .style(move |_, status| {
+            let emphasized = matches!(
+                status,
+                checkbox::Status::Active { is_checked: true }
+                    | checkbox::Status::Hovered { .. }
+                    | checkbox::Status::Disabled { is_checked: true }
+            );
+            checkbox::Style {
+                background: p.background.into(),
+                icon_color: p.accent,
+                border: Border {
+                    color: if emphasized { p.accent } else { p.muted },
+                    width: 1.,
+                    radius: 0.into(),
+                },
+                text_color: Some(p.text),
+            }
+        })
 }
 fn capitalize(s: &str) -> String {
     let mut chars = s.chars();

@@ -84,8 +84,6 @@ impl Store {
             .transpose()?
             .unwrap_or_default();
         let previous = settings.clone();
-        settings.file = crate::sound_settings::current_file(&settings.file).into();
-        settings.advance_file = crate::sound_settings::current_file(&settings.advance_file).into();
         settings.volume = settings.volume.min(100);
         if settings != previous {
             self.save_sound_settings(&settings)?;
@@ -288,15 +286,15 @@ fn read_reminder(row: &rusqlite::Row<'_>) -> rusqlite::Result<Reminder> {
 mod tests {
     use super::*;
     #[test]
-    fn legacy_sound_names_are_migrated_and_saved_without_resetting_preferences() {
+    fn selecting_legacy_sound_names_does_not_replace_them_on_reload() {
         let store = memory();
         store.connection.execute(
             "INSERT INTO sound_settings(id,data) VALUES(1,?1)",
             [r#"{"enabled":false,"file":"kokonut.mp3","volume":27,"advance_enabled":true,"advance_file":"anticipado.mp3"}"#],
         ).unwrap();
         let settings = store.sound_settings().unwrap();
-        assert_eq!(settings.file, "ko-tify.mp3");
-        assert_eq!(settings.advance_file, "alarm.mp3");
+        assert_eq!(settings.file, "kokonut.mp3");
+        assert_eq!(settings.advance_file, "anticipado.mp3");
         assert!(!settings.enabled);
         assert!(settings.advance_enabled);
         assert_eq!(settings.volume, 27);
@@ -385,7 +383,7 @@ mod tests {
             file: "mi alarma.mp3".into(),
             volume: 25,
             advance_enabled: true,
-            advance_file: "alarm.mp3".into(),
+            advance_file: "anticipado.mp3".into(),
         };
         let snapshot = alarm_snapshot(1000);
         {
